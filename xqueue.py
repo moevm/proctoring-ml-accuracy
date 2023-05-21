@@ -1,14 +1,14 @@
 import os
-import json
 import pprint
 import uvicorn
 from fastapi import FastAPI, Form
 from fastapi.responses import FileResponse, HTMLResponse
-from config import XQ_HOST, XQ_PORT, XQ_USERNAME, XQ_PASSWORD
+from config import XQ_HOST, XQ_PORT, XQ_USERNAME, XQ_PASSWORD, Q_NAME_TO_FILE
 from test import Tests
 
 app = FastAPI()
-tests = Tests('tests', XQ_HOST + ':' + str(XQ_PORT))
+tests = Tests('tests')
+# tests = Tests('tests', XQ_HOST + ':' + str(XQ_PORT))
 
 
 @app.post('/xqueue/login/')
@@ -20,13 +20,11 @@ def xqueue_login(username=Form(), password=Form()):
 
 @app.get('/xqueue/get_submission/')
 def xqueue_get_submission(queue_name: str):
-    pprint.pprint(queue_name)
-    # ToDo: send to test
-    data = tests.curr()
+    data = tests.curr(Q_NAME_TO_FILE[queue_name])
     if data is not None:
-        tests.next()
-        return {'content': json.dumps(data)}
-    return {'content': {}}
+        tests.next(Q_NAME_TO_FILE[queue_name])
+        return {'content': data}
+    return HTMLResponse(status_code=405)
 
 
 @app.post('/xqueue/put_result/')
@@ -39,9 +37,8 @@ def xqueue_put_result(xqueue_header=Form(), xqueue_body=Form()):
     return {'result_code': 0}
 
 
-@app.get('/tests/{test_id}/data/{file_name}')
+@app.get('/tests/{test_id}/{file_name}')
 def test_data_send(test_id: int, file_name: str):
-    pprint.pprint(f'{test_id}, {file_name}')
     if os.path.exists(f'tests/{test_id}/data/{file_name}'):
         return FileResponse(f'tests/{test_id}/data/{file_name}', media_type='application/octet-stream')
     return HTMLResponse(status_code=404)

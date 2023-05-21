@@ -6,3 +6,8 @@ XQ_HOST = os.getenv('XQ_HOST', 'localhost')
 XQ_PORT = os.getenv('XQ_PORT', 18040)
 XQ_USERNAME = os.getenv('XQ_USERNAME', 'ml_service')
 XQ_PASSWORD = os.getenv('XQ_PASSWORD', 'ml_password')
+
+Q_NAME_TO_FILE = {
+    'webcam_queue': 'webcam.mp4',
+    'screencast_queue': 'window.mp4'
+}
