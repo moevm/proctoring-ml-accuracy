@@ -38,8 +38,8 @@ async def ml_auth_token(client: Client):
 
 
 @app.post('/logs')
-async def logs(logs: Logs):
-    pprint.pprint(logs)
+async def logs(log: Logs):
+    pprint.pprint(log)
     return {'status': 'ok'}
 
 
