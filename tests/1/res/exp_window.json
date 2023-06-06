@@ -1,0 +1,11 @@
+{
+  "result": {
+    "warn": [],
+    "ok": [
+      "file_manager",
+      "code_editor"
+    ]
+  },
+  "elapsed_time": 30,
+  "msg": "ok"
+}

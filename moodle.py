@@ -1,5 +1,6 @@
 import pprint
 import uvicorn
+import threading
 from fastapi import FastAPI
 from pydantic import BaseModel
 from config import ML_HOST, ML_PORT
@@ -43,5 +44,11 @@ async def logs(log: Logs):
     return {'status': 'ok'}
 
 
+def run(args: dict):
+    server = uvicorn.Server(uvicorn.Config('moodle:app', host=ML_HOST, port=ML_PORT))
+    threading.Thread(target=lambda: server.run(), args=()).start()
+    return server
+
+
 if __name__ == '__main__':
-    uvicorn.run('moodle:app', host=ML_HOST, port=ML_PORT)
+    run({})

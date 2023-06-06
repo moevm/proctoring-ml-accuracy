@@ -32,11 +32,11 @@ XQ_PASSWORD=ml_password
 
 Run modules:
 
-`python xqueue.py  [--http]`
+`python xqueue.py  [--web]`
 
 `python moodle.py`
 
-_xqueue.py_ can optional run with _--http_ flag which mean that tests data 
+_xqueue.py_ can optional run with _--web_ flag which mean that tests data 
 will contain http address instead of absolute path.
 
 _xqueue server_ will return tests on request 'get_submission' until they run out, 
