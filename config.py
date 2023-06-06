@@ -8,3 +8,10 @@ XQ_USERNAME = os.getenv('XQ_USERNAME', 'ml_service')
 XQ_PASSWORD = os.getenv('XQ_PASSWORD', 'ml_password')
 
 TEST_PATH = 'tests'
+
+WINDOW_QUEUE = 'screencast_queue'
+WEBCAM_QUEUE = 'webcam_queue'
+FILE_NAME_QUEUE = {
+    'screencast_queue': 'window.mp4',
+    'webcam_queue': 'webcam.mp4'
+}

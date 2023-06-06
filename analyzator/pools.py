@@ -1,34 +1,54 @@
 import os
 import json
 import glob
+from config import WINDOW_QUEUE, WEBCAM_QUEUE, FILE_NAME_QUEUE
 
 
-class AnswerPull:
-    def __init__(self, save_path: str):
-        self.save_path = save_path
+class AnswerPool:
+    def __init__(self):
         self.results = []
-        self.index = 0
 
-    def __iter__(self):
-        self.index = 0
-        return self
+    def get_window_results(self):
+        results = []
+        for i in self.results:
+            if i['queue'] == WINDOW_QUEUE:
+                results.append(i)
+        return results
 
-    def __next__(self):
-        # Todo: Load result
-        if self.index < len(self.results):
-            content = self.results[self.index]
-            self.index += 1
-            return content
-        raise StopIteration
+    def get_webcam_results(self):
+        results = []
+        for i in self.results:
+            if i['queue'] == WEBCAM_QUEUE:
+                results.append(i)
+        return results
 
-    def save_answer(self, index: int, answer):
-        # Todo: Save result
-        self.results.append([index, answer])
+    def push_answer(self, index: int, queue_type: str, answer: str):
+        if queue_type in FILE_NAME_QUEUE.keys():
+            answer = json.loads(answer)
+            done_answer = {
+                "result": {
+                    "warn": [],
+                    "ok": []
+                },
+                "elapsed_time": answer['result']['elapsed_time'],
+                "msg": answer['msg']
+            }
+            for i in answer['result']['frame_data']:
+                for j in i.keys():
+                    if done_answer.get(j):
+                        done_answer['result'][j] += i[j]
+            self.results.append({'index': index, 'queue': queue_type, 'answer': answer})
+
+    def save_local(self, save_path: str):
+        for i in self.results:
+            file_name = FILE_NAME_QUEUE[i['queue']].split('.', 1)[0] + '_' + i['index'] + '.json'
+            with open(f'{save_path}/{file_name}', 'w') as f:
+                f.write(i['answer'])
 
 
 # -------------------------------------------------------------------------------
 
-class TestPull:
+class TestPool:
     class Iterator:
         def __init__(self, iterable, test_type: str):
             self.index = 0
@@ -53,11 +73,11 @@ class TestPull:
     def get_iterator(self, test_type):
         return self.Iterator(self, test_type)
 
-    def data_gen(self, index, test_file):
+    def data_gen(self, index, test_file: str):
         test_id = int(self.directs[index].rsplit('/', 1)[-1])
 
         body = {
-            'token': str(self.index),
+            'token': str(test_id),
             'data': {
                 'student_data': [],
                 'student_info': []
@@ -81,7 +101,7 @@ class TestPull:
             print(f'There is no video in test "{test_id}"')
 
         content = {
-            'xqueue_header': json.dumps({'submission_id': str(test_id), 'submission_key': str(test_id)}),
+            'xqueue_header': json.dumps({'submission_id': str(test_id), 'submission_key': test_file.split('.', 1)[0]}),
             'xqueue_body': json.dumps(body),
             'xqueue_files': json.dumps({'anything': ''})
         }
@@ -100,8 +120,4 @@ class TestPull:
 # -------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    test = TestPull('tests')
-    for i in test.get_iterator('window.mp4'):
-        print(i)
-    for i in test.get_iterator('webcam.mp4'):
-        print(i)
+    pass

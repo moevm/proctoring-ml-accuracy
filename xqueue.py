@@ -3,18 +3,19 @@ import json
 import pprint
 import uvicorn
 import argparse
+import threading
 from fastapi import FastAPI, Form
 from fastapi.responses import FileResponse, HTMLResponse
-from config import XQ_HOST, XQ_PORT, XQ_USERNAME, XQ_PASSWORD, TEST_PATH
-from analyzator.test_pull import TestPull
-from analyzator.analizer import store_res
+from config import XQ_HOST, XQ_PORT, XQ_USERNAME, XQ_PASSWORD, TEST_PATH, WINDOW_QUEUE, WEBCAM_QUEUE, FILE_NAME_QUEUE
+from analyzator.pools import TestPool, AnswerPool
 
 
 app = FastAPI()
-tests = TestPull(TEST_PATH)
+tests = TestPool(TEST_PATH)
+results = AnswerPool()
 test_iters = {
-    'webcam_queue': tests.get_iterator('webcam.mp4'),
-    'screencast_queue': tests.get_iterator('window.mp4')
+    WINDOW_QUEUE: tests.get_iterator(FILE_NAME_QUEUE[WINDOW_QUEUE]),
+    WEBCAM_QUEUE: tests.get_iterator(FILE_NAME_QUEUE[WEBCAM_QUEUE])
 }
 
 
@@ -28,10 +29,12 @@ async def xqueue_login(username=Form(), password=Form()):
 @app.get('/xqueue/get_submission/')
 async def xqueue_get_submission(queue_name: str):
     try:
-        data = next(test_iters[queue_name])
-        return {'content': data}
+        if test_iters.get(queue_name):
+            data = next(test_iters[queue_name])
+            return {'content': data}
+        return HTMLResponse(status_code=405)
     except StopIteration:
-        pass
+        test_iters.pop(queue_name)
     return HTMLResponse(status_code=405)
 
 
@@ -39,7 +42,8 @@ async def xqueue_get_submission(queue_name: str):
 async def xqueue_put_result(xqueue_header=Form(), xqueue_body=Form()):
     try:
         test_id = int(json.loads(xqueue_header)['submission_id'])
-        store_res(test_id, xqueue_body)
+        test_file = json.loads(xqueue_header)['submission_key']
+        results.push_answer(test_id, test_file, xqueue_body)
     except ValueError | KeyError:
         pprint.pprint('Can not save result from proctoring-ml')
         pprint.pprint(f'xqueue_header:\n{xqueue_header}')
@@ -54,9 +58,21 @@ async def test_data_send(test_id: int, file_name: str):
     return HTMLResponse(status_code=404)
 
 
+def run(args: dict):
+    if args['web']:
+        tests.set_data_output('web', XQ_HOST + ':' + str(XQ_PORT))
+    if args['only_screen']:
+        test_iters.pop(WEBCAM_QUEUE)
+    elif args['only_camera']:
+        test_iters.pop(WINDOW_QUEUE)
+    server = uvicorn.Server(uvicorn.Config('xqueue:app', host=XQ_HOST, port=XQ_PORT))
+    threading.Thread(target=lambda: server.run(), args=()).start()
+    return server
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument("--web", action='store_true', help="tests data will contain http address instead of absolute path")
-    if vars(ap.parse_args())['web']:
-        tests.set_data_output('web', XQ_HOST + ':' + str(XQ_PORT))
-    uvicorn.run('xqueue:app', host=XQ_HOST, port=XQ_PORT)
+    ap.add_argument("--only_camera", action='store_true', help="only web-camera proctoring testing")
+    ap.add_argument("--only_screen", action='store_true', help="only screencast proctoring testing")
+    run(vars(ap.parse_args()))
