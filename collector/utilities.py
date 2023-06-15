@@ -1,7 +1,7 @@
 import os
 import json
 import glob
-from config import WINDOW_QUEUE, WEBCAM_QUEUE, FILE_NAME_QUEUE
+from collector.config import WINDOW_QUEUE, WEBCAM_QUEUE, FILE_NAME_QUEUE
 
 
 class AnswerPool:
@@ -44,6 +44,9 @@ class AnswerPool:
             file_name = FILE_NAME_QUEUE[i['queue']].split('.', 1)[0] + '_' + i['index'] + '.json'
             with open(f'{save_path}/{file_name}', 'w') as f:
                 f.write(i['answer'])
+
+    def clear(self):
+        self.results.clear()
 
 
 # -------------------------------------------------------------------------------
@@ -115,9 +118,3 @@ class TestPool:
             self.host_port = None
         elif o_type == 'web' and address is not None:
             self.host_port = address
-
-
-# -------------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    pass

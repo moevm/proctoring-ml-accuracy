@@ -1,7 +1,6 @@
 import os
 import json
-import matplotlib.pyplot as plt
-from analyzator.pools import AnswerPool
+from collector.utilities import AnswerPool
 
 
 class Analyzer:
