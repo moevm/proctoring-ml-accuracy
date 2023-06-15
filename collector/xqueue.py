@@ -4,7 +4,7 @@ import pprint
 from fastapi import FastAPI, Form
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseSettings
-from collector.config import XQ_USERNAME, XQ_PASSWORD, FILE_NAME_QUEUE
+from collector.config import XQ_USERNAME, XQ_PASSWORD
 from collector.utilities import TestPool, AnswerPool
 
 
@@ -44,8 +44,8 @@ async def xqueue_get_submission(queue_name: str):
 async def xqueue_put_result(xqueue_header=Form(), xqueue_body=Form()):
     try:
         test_id = int(json.loads(xqueue_header)['submission_id'])
-        test_file = json.loads(xqueue_header)['submission_key']
-        settings.results.push_answer(test_id, test_file, xqueue_body)
+        queue_type = json.loads(xqueue_header)['submission_key']
+        settings.results.push_answer(test_id, queue_type, xqueue_body)
     except ValueError | KeyError:
         pprint.pprint('Can not save result from proctoring-ml')
         pprint.pprint(f'xqueue_header:\n{xqueue_header}')
@@ -63,10 +63,10 @@ async def test_data_send(test_id: int, file_name: str):
 # API
 
 def refresh():
-    settings.results.clear()
+    settings.results = AnswerPool()
     settings.test_iters.clear()
     for i in settings.queues:
-        settings.test_iters.update({i: settings.tests.get_iterator(FILE_NAME_QUEUE[i])})
+        settings.test_iters.update({i: settings.tests.get_iterator(i)})
 
 
 def setup(queues: list, test_pool: TestPool):
@@ -75,5 +75,9 @@ def setup(queues: list, test_pool: TestPool):
     refresh()
 
 
+def empty():
+    return len(settings.test_iters) == 0
+
+
 def result():
-    return settings.results if len(settings.test_iters) == 0 else None
+    return settings.results

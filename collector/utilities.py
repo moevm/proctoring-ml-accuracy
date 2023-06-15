@@ -1,24 +1,17 @@
 import os
 import json
 import glob
-from collector.config import WINDOW_QUEUE, WEBCAM_QUEUE, FILE_NAME_QUEUE
+from collector.config import FILE_NAME_QUEUE
 
 
 class AnswerPool:
     def __init__(self):
         self.results = []
 
-    def get_window_results(self):
+    def get_queue_results(self, queue):
         results = []
         for i in self.results:
-            if i['queue'] == WINDOW_QUEUE:
-                results.append(i)
-        return results
-
-    def get_webcam_results(self):
-        results = []
-        for i in self.results:
-            if i['queue'] == WEBCAM_QUEUE:
+            if i['queue'] == queue:
                 results.append(i)
         return results
 
@@ -35,9 +28,9 @@ class AnswerPool:
             }
             for i in answer['result']['frame_data']:
                 for j in i.keys():
-                    if done_answer.get(j):
+                    if done_answer['result'].get(j) is not None:
                         done_answer['result'][j] += i[j]
-            self.results.append({'index': index, 'queue': queue_type, 'answer': answer})
+            self.results.append({'index': index, 'queue': queue_type, 'answer': done_answer})
 
     def save_local(self, save_path: str):
         for i in self.results:
@@ -53,10 +46,10 @@ class AnswerPool:
 
 class TestPool:
     class Iterator:
-        def __init__(self, iterable, test_type: str):
+        def __init__(self, iterable, queue_type: str):
             self.index = 0
             self.iterable = iterable
-            self.test_type = test_type
+            self.queue_type = queue_type
 
         def __iter__(self):
             self.index = 0
@@ -65,7 +58,7 @@ class TestPool:
         def __next__(self):
             if self.index < len(self.iterable.directs):
                 self.index += 1
-                return self.iterable.data_gen(self.index - 1, self.test_type)
+                return self.iterable.data_gen(self.index - 1, self.queue_type)
             raise StopIteration
 
     def __init__(self, test_path: str):
@@ -73,10 +66,10 @@ class TestPool:
         self.directs = sorted(glob.glob(test_path + '/*'))
         self.index = 0
 
-    def get_iterator(self, test_type):
-        return self.Iterator(self, test_type)
+    def get_iterator(self, queue_type):
+        return self.Iterator(self, queue_type)
 
-    def data_gen(self, index, test_file: str):
+    def data_gen(self, index, queue_type: str):
         test_id = int(self.directs[index].rsplit('/', 1)[-1])
 
         body = {
@@ -98,13 +91,13 @@ class TestPool:
         else:
             print(f'There is no photo in test "{test_id}"')
 
-        if os.path.exists(f'{self.directs[self.index]}/data/{test_file}'):
-            body['data']['student_data'].append(file_source + test_file)
+        if os.path.exists(f'{self.directs[self.index]}/data/{FILE_NAME_QUEUE[queue_type]}'):
+            body['data']['student_data'].append(file_source + FILE_NAME_QUEUE[queue_type])
         else:
             print(f'There is no video in test "{test_id}"')
 
         content = {
-            'xqueue_header': json.dumps({'submission_id': str(test_id), 'submission_key': test_file.split('.', 1)[0]}),
+            'xqueue_header': json.dumps({'submission_id': str(test_id), 'submission_key': queue_type}),
             'xqueue_body': json.dumps(body),
             'xqueue_files': json.dumps({'anything': ''})
         }

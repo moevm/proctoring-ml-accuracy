@@ -10,7 +10,7 @@ class Collector:
     def __init__(self):
         self.tests = None
         self.run_times = 0
-        self.results = None
+        self.results = []
         self.initialized = False
 
     def run(self):
@@ -19,20 +19,18 @@ class Collector:
 
         self.results = []
         for _ in range(self.run_times):
-            x_server = uvicorn.Server(uvicorn.Config('xqueue:app', host=XQ_HOST, port=XQ_PORT))
+            x_server = uvicorn.Server(uvicorn.Config('collector.xqueue:app', host=XQ_HOST, port=XQ_PORT))
             x_th = threading.Thread(target=lambda: x_server.run(), args=())
             x_th.start()
 
-            m_server = uvicorn.Server(uvicorn.Config('moodle:app', host=ML_HOST, port=ML_PORT))
+            m_server = uvicorn.Server(uvicorn.Config('collector.moodle:app', host=ML_HOST, port=ML_PORT))
             m_th = threading.Thread(target=lambda: m_server.run(), args=())
             m_th.start()
 
-            result = xqueue.result()
-            while result is None:
+            while not xqueue.empty():
                 time.sleep(0.5)
-                result = xqueue.result()
 
-            self.results.append(result)
+            self.results.append(xqueue.result())
             xqueue.refresh()
 
             x_server.handle_exit(2, None)
@@ -53,6 +51,5 @@ class Collector:
         if http:
             self.tests.set_data_output('web', XQ_HOST + ':' + str(XQ_PORT))
         self.run_times = runs
-        self.results = []
         xqueue.setup(queues, self.tests)
         self.initialized = True
