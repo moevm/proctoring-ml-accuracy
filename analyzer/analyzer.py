@@ -29,7 +29,7 @@ class Analyzer:
                 grade += j['result']
 
             self.summary.update({i: {
-                'grade': grade / len(temp_list),
+                'grade': grade / (len(temp_list) if len(temp_list) > 0 else 1),
                 'elapsed_time': temp_time,
                 'results': temp_list
             }})

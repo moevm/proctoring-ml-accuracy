@@ -1,6 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import dcc, html, Input, Output, State
 
 import assets.config as config
 from collector import Collector
@@ -13,22 +13,24 @@ app.title = config.APP_NAME
 
 
 select_queues = [
-    dbc.DropdownMenuItem('Screencast'),
-    dbc.DropdownMenuItem('Webcam')
+    {'label': 'Screencast', 'value': 'screencast_queue'},
+    {'label': 'Webcam', 'value': 'webcam_queue'}
 ]
 
+value_to_label = {
+    'screencast_queue': 'Screencast',
+    'webcam_queue': 'Webcam'
+}
+
 graph_queues = [
-    dbc.DropdownMenuItem('All'),
-    dbc.DropdownMenuItem('Screencast'),
-    dbc.DropdownMenuItem('Webcam')
+    {'label': 'All', 'value': 'all'}
 ]
 
 
 # App body
 # IDs:
-#   n-queues, times-to-run,   run,
-#   n-graph,  download-excel, plot,
-#   title
+#   n-graph, times-to-run,
+#   n-queues, run, plot
 
 body = dbc.Col(children=[
     # input
@@ -36,58 +38,55 @@ body = dbc.Col(children=[
         dbc.Col(dbc.Row(dbc.Button("Run", id="run", color="primary")), width=2, style={"margin-right": "50px"}),
 
         dbc.Col(html.Div(children=[
-            dbc.Label("Testing queues", html_for="n-queues", style={"width": "50%"}),
-            dbc.Row(dbc.DropdownMenu(id="n-queues", label="Queues", children=select_queues), style={"width": "50%"})
-        ], style={'display': 'flex', 'align-items': 'center'}), width=2, style={"margin-right": "50px"}),
+            dbc.Label("Testing queues", html_for="n-queues", style={"width": "30%"}),
+            dcc.Dropdown(id='n-queues', className='dash-bootstrap', options=select_queues, multi=True, clearable=False,
+                         style={"flex-grow": "1"}),
+        ], style={'display': 'flex', 'align-items': 'center'}), width=3, style={"margin-right": "50px"}),
 
         dbc.Col(html.Div(children=[
             dbc.Label("Times to run", html_for="times-to-run", style={"width": "50%"}),
-            dbc.Input(id="times-to-run", placeholder="times to run", type="number", value="1", style={"width": "50%"}),
+            dbc.Input(id="times-to-run", type="number", min=0, max=10, step=1, value=1, style={"width": "50%"}),
         ], style={'display': 'flex', 'align-items': 'center'}), width=2, style={"margin-right": "50px"}),
 
         dbc.Col(html.Div(children=[
             dbc.Label("Graph output", html_for="n-graph", style={"width": "50%"}),
-            dbc.DropdownMenu(id="n-graph", label=graph_queues[0].children, children=graph_queues,
-                             style={"width": "50%"})
+            dbc.Select(id="n-graph", options=graph_queues, value=graph_queues[0], style={"flex-grow": "1"})
         ], style={'display': 'flex', 'align-items': 'center'}), width=2, style={"margin-right": "50px"})
     ], style={"margin": "0 0 30px 0"}),
 
     # output
     dbc.Row(children=[
         dbc.Col(children=[
-            dcc.Textarea(style={"height": "100%", "width": "100%", "resize": "none"}, readOnly=True)
+            dcc.Textarea(id="text-area", style={"height": "100%", "width": "100%", "resize": "none"}, readOnly=True)
         ], width=3),
         dbc.Col(children=[
-            dbc.Spinner([
-                # title
-                html.H6(id="title"),
-                # download
-                dbc.Badge(html.A('Download', id='download-excel', download="tables.xlsx", href="", target="_blank"),
-                          color="success", pill=True),
-                # plot
-                dcc.Graph(id="plot")
-            ], color="primary", type="grow")
+            dbc.Spinner(dcc.Graph(id="plot"), color="primary", type="grow")
         ], width=9)
     ])
 ])
 
 
-@app.callback(output=[dash.Output(component_id="title", component_property="children"),
-                      dash.Output(component_id="plot", component_property="figure"),
-                      dash.Output(component_id="download-excel", component_property="href")],
-              inputs=[dash.Input(component_id="run", component_property="n_clicks")],
-              state=[dash.State("n_queues", "value"), dash.State("n_graph", "value"),
-                     dash.State("times_to_run", "value")])
-def execute(n_clicks, n_queues, n_graph, times_to_run):
-    try:
-        print(n_clicks, n_graph)  # ToDo: Checkout
-        analyzer = Analyzer(config.TEST_PATH)
-        collector = Collector()
-        collector.setup(config.TEST_PATH, n_queues, times_to_run)
-        results = analyzer.run(collector.run(), 'temp')
-        return results
-    except Exception as e:
-        print(e)
+@app.callback(Output("n-graph", "options"), Input("n-queues", "value"))
+def update_graph_queue_list(queues):
+    result = [{'label': 'All', 'value': 'all'}]
+    for i in queues:
+        result.append({'label': value_to_label[i], 'value': i})
+    return result
+
+
+@app.callback(Output("text-area", "value"), Output("plot", "figure"),
+              Input("run", "n_clicks"),
+              State("n-queues", "value"), State("times-to-run", "value"))
+def execute(n_clicks, queues, times_to_run):
+    if queues is not None:
+        try:
+            collector = Collector()
+            collector.setup(config.TEST_PATH, queues, times_to_run)
+            analyzer = Analyzer(config.TEST_PATH, queues)
+            results = analyzer.run(collector.run())
+            print(results)
+        except Exception as e:
+            print('Exception: ', e)
 
 
 # App main layout

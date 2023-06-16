@@ -25,7 +25,9 @@ if __name__ == "__main__":
         collector = Collector()
         collector.setup(TEST_PATH, queues, run_times, args['web'])
         analyzer = Analyzer(TEST_PATH, queues)
-        results = analyzer.run(collector.run())
-        print(results)
+
+        results = collector.run()
+        summary = analyzer.run(results)
+        print(summary)
     except Exception as e:
-        print(e)
+        print('Exception: ', e)

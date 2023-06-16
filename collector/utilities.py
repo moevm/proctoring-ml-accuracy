@@ -29,7 +29,9 @@ class AnswerPool:
             for i in answer['result']['frame_data']:
                 for j in i.keys():
                     if done_answer['result'].get(j) is not None:
-                        done_answer['result'][j] += i[j]
+                        for k in i[j]:
+                            if not (k in done_answer['result'][j]):
+                                done_answer['result'][j].append(k)
             self.results.append({'index': index, 'queue': queue_type, 'answer': done_answer})
 
     def save_local(self, save_path: str):

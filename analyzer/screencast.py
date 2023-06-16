@@ -10,6 +10,6 @@ def screencast(test_path, result):
             grade, grade_max = 0, len(exp['result'].keys())
             if exp['msg'] == result['answer']['msg']:
                 for i in exp['result'].keys():
-                    grade = grade + 1 if exp['result'][i] != result['result'][i] else grade
+                    grade = grade + 1 if exp['result'][i] != result['answer']['result'][i] else grade
             return {'index': result['index'], 'result': grade / grade_max, 'time': result['answer']['elapsed_time']}
     return {'index': result['index'], 'result': 0, 'time': 0}
