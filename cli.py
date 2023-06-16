@@ -27,7 +27,7 @@ if __name__ == "__main__":
         analyzer = Analyzer(TEST_PATH, queues)
 
         results = collector.run()
-        summary = analyzer.run(results)
-        print(summary)
+        analyzer.run(results)
+        print(analyzer.get_pretty_text())
     except Exception as e:
         print('Exception: ', e)
