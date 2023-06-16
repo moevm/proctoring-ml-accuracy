@@ -17,12 +17,12 @@ pip install -r requirements.txt
 
 Setup environment variables (optionally):
 
-For _moodle_:
+For _moodle_ by default:
 ```
 ML_HOST=http://127.0.0.1
 ML_PORT=8080
 ```
-For _xqueue_:
+For _xqueue_ by default:
 ```
 XQ_HOST=http://127.0.0.1
 XQ_PORT=18040
@@ -30,14 +30,19 @@ XQ_USERNAME=ml_service
 XQ_PASSWORD=ml_password
 ```
 
-Run modules:
+**Run benchmarking:**
 
-`python xqueue.py  [--web]`
+`python cli.py  [--web --only_screen --only_camera]`
 
-`python moodle.py`
+CLI:
 
-_xqueue.py_ can optional run with _--web_ flag which mean that tests data 
-will contain http address instead of absolute path.
+* _--web_ - this command mean tests data will contain http address instead of absolute path.
+* _--only_screen_ - with this command benchmark will test only screencast proctoring.
+* _--only_camera_ - with this command benchmark will test only web-camera proctoring.
+
+**Run benchmark with Web UI:**
+
+`python app.py`
 
 _xqueue server_ will return tests on request 'get_submission' until they run out, 
 then it will send a response with a 405 error code.
@@ -47,20 +52,31 @@ then it will send a response with a 405 error code.
 
 ```
 tests/
-├── 1
-│   ├── data
+├── 1/
+│   ├── data/
 │   │   ├── photo.jpg [.png]
 │   │   ├── webcam.mp4
 │   │   └── window.mp4
-│   └── res
-│       └── <some expected results>
-└── 2
-    ├── data
+│   └── res/
+│       ├── exp_webcam.json
+│       └── exp_window.json
+├── 2/
+│   ├── data/
+│   │   ├── photo.jpg [.png]
+│   │   ├── webcam.mp4
+│   │   └── window.mp4
+│   └── res/
+│       ├── exp_webcam.json
+│       └── exp_window.json
+    . . . . . . . .
+└── n/
+    ├── data/
     │   ├── photo.jpg [.png]
     │   ├── webcam.mp4
     │   └── window.mp4
-    └── res
-        └── <some expected results>
+    └── res/
+        ├── exp_webcam.json
+        └── exp_window.json
 ```
 
 Folder structure with expected results will be done soon.
