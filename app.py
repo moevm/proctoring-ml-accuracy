@@ -83,8 +83,10 @@ def execute(n_clicks, queues, times_to_run):
             collector = Collector()
             collector.setup(config.TEST_PATH, queues, times_to_run)
             analyzer = Analyzer(config.TEST_PATH, queues)
-            results = analyzer.run(collector.run())
-            print(results)
+
+            results = collector.run()
+            analyzer.run(results)
+            return analyzer.get_pretty_text(), analyzer.get_graphs()
         except Exception as e:
             print('Exception: ', e)
 

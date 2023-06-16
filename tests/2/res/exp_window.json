@@ -1,8 +1,9 @@
 {
   "result": {
-    "warn": [],
+    "warn": [
+      "edx"
+    ],
     "ok": [
-      "file_manager",
       "code_editor"
     ]
   },
